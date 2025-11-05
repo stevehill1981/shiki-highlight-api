@@ -1,0 +1,54 @@
+{
+  "name": "shiki-highlight-api",
+  "version": "0.1.0",
+  "description": "High-performance syntax highlighting using CSS Custom Highlight API (87% fewer DOM nodes)",
+  "keywords": [
+    "shiki",
+    "syntax-highlighting",
+    "highlight-api",
+    "performance",
+    "markdown",
+    "code",
+    "css-highlights"
+  ],
+  "author": "Steve Hill <steve@stevehill.xyz>",
+  "license": "MIT",
+  "homepage": "https://github.com/stevehill1981/shiki-highlight-api#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stevehill1981/shiki-highlight-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stevehill1981/shiki-highlight-api/issues"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Tests coming soon\" && exit 0"
+  },
+  "peerDependencies": {
+    "shiki": ">=1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "shiki": "^1.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
