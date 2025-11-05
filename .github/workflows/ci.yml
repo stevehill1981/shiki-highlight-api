@@ -49,3 +49,9 @@ jobs:
 
       - name: Check types
         run: npx tsc --noEmit
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check

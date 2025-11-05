@@ -6,7 +6,13 @@
  * while maintaining identical visual output.
  */
 
-import { createHighlighter, bundledLanguages, type BundledLanguage, type Highlighter } from 'shiki';
+import {
+  createHighlighter,
+  bundledLanguages,
+  type BundledLanguage,
+  type Highlighter,
+  type LanguageRegistration,
+} from 'shiki';
 import type { ThemedToken } from 'shiki';
 
 // Singleton highlighter instance
@@ -102,7 +108,7 @@ export async function codeToHighlightHtml(
   const stats = {
     tokens: tokens.tokens.flat().length,
     lines: tokens.tokens.length,
-    uniqueStyles: new Set(tokens.tokens.flat().map(t => t.color)).size,
+    uniqueStyles: new Set(tokens.tokens.flat().map((t) => t.color)).size,
   };
 
   return { html, css, script, stats };
@@ -121,7 +127,7 @@ export async function codeToHighlightHtml(
  * });
  * ```
  */
-export async function loadCustomLanguage(grammar: any): Promise<void> {
+export async function loadCustomLanguage(grammar: LanguageRegistration): Promise<void> {
   const highlighter = await getHighlighter();
   await highlighter.loadLanguage(grammar);
 }
@@ -132,17 +138,19 @@ export async function loadCustomLanguage(grammar: any): Promise<void> {
 function generateHtml(code: string, blockId: string): string {
   const lines = code.split('\n');
 
-  const linesHtml = lines.map((line, i) => {
-    const lineId = `${blockId}-L${i}`;
-    // Escape HTML entities
-    const escaped = line
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-    return `<span id="${lineId}" class="line">${escaped}</span>`;
-  }).join('\n');
+  const linesHtml = lines
+    .map((line, i) => {
+      const lineId = `${blockId}-L${i}`;
+      // Escape HTML entities
+      const escaped = line
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+      return `<span id="${lineId}" class="line">${escaped}</span>`;
+    })
+    .join('\n');
 
   return `<pre class="shiki" data-highlight-block="${blockId}"><code>${linesHtml}</code></pre>`;
 }
@@ -155,7 +163,7 @@ function generateCss(tokens: ThemedToken[][], theme: string, blockId: string): s
   const colorMap = new Map<string, string>();
   let colorIndex = 0;
 
-  tokens.flat().forEach(token => {
+  tokens.flat().forEach((token) => {
     if (token.color && !colorMap.has(token.color)) {
       const highlightName = `hl-${blockId}-${colorIndex++}`;
       colorMap.set(token.color, highlightName);
@@ -163,9 +171,11 @@ function generateCss(tokens: ThemedToken[][], theme: string, blockId: string): s
   });
 
   // Generate ::highlight() rules
-  const rules = Array.from(colorMap.entries()).map(([color, name]) => {
-    return `::highlight(${name}) { color: ${color}; }`;
-  }).join('\n');
+  const rules = Array.from(colorMap.entries())
+    .map(([color, name]) => {
+      return `::highlight(${name}) { color: ${color}; }`;
+    })
+    .join('\n');
 
   return `<style data-highlight-styles="${blockId}">\n${rules}\n</style>`;
 }
@@ -186,7 +196,7 @@ function generateScript(tokens: ThemedToken[][], blockId: string): string {
 
   tokens.forEach((line, lineIndex) => {
     let offset = 0;
-    line.forEach(token => {
+    line.forEach((token) => {
       if (token.color) {
         ranges.push({
           line: lineIndex,
@@ -202,7 +212,7 @@ function generateScript(tokens: ThemedToken[][], blockId: string): string {
   // Generate color to highlight name mapping
   const colorMap = new Map<string, string>();
   let colorIndex = 0;
-  tokens.flat().forEach(token => {
+  tokens.flat().forEach((token) => {
     if (token.color && !colorMap.has(token.color)) {
       colorMap.set(token.color, `hl-${blockId}-${colorIndex++}`);
     }
@@ -280,10 +290,7 @@ function generateId(): string {
  * });
  * ```
  */
-export async function codeToHtmlFallback(
-  code: string,
-  options: HighlightOptions
-): Promise<string> {
+export async function codeToHtmlFallback(code: string, options: HighlightOptions): Promise<string> {
   const highlighter = await getHighlighter();
   return highlighter.codeToHtml(code, {
     lang: options.lang as BundledLanguage,

@@ -21,6 +21,9 @@
   "bugs": {
     "url": "https://github.com/stevehill1981/shiki-highlight-api/issues"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -43,19 +46,29 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prepublishOnly": "npm run build && npm test"
   },
   "peerDependencies": {
     "shiki": ">=1.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/eslint__js": "^8.42.3",
     "@types/node": "^24.10.0",
     "@vitest/ui": "^4.0.7",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^20.0.10",
     "jsdom": "^27.1.0",
+    "prettier": "^3.6.2",
     "shiki": "^3.14.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
+    "typescript-eslint": "^8.46.3",
     "vitest": "^4.0.7"
   }
 }
