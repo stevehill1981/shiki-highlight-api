@@ -299,6 +299,6 @@ MIT © [Steve Hill](https://github.com/stevehill1981)
 ## Links
 
 - [npm package](https://www.npmjs.com/package/shiki-highlight-api)
-- [GitHub repository](https://github.com/stevehill1981/shiki-highlight-api)
+- [GitHub repository](https://github.com/shiki-highlights/shiki-highlight-api)
 - [CSS Custom Highlight API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API)
 - [Shiki documentation](https://shiki.style/)
