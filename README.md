@@ -12,6 +12,7 @@ High-performance syntax highlighting using the CSS Custom Highlight API instead 
 Traditional syntax highlighters (including Shiki) wrap **every single token** in a `<span>` element. For a 200-line code block with ~10 tokens per line, that's **2000+ DOM nodes**.
 
 This impacts:
+
 - **Page load time** (more nodes to parse)
 - **Memory usage** (each node has overhead)
 - **Scrolling performance** (more reflows)
@@ -25,11 +26,11 @@ The [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/
 
 ### Performance Gains
 
-| Metric | Traditional (Shiki) | Highlight API | Improvement |
-|--------|---------------------|---------------|-------------|
-| **7-line code block** | 35 DOM nodes | 7 DOM nodes | **80% reduction** |
-| **200-line file** | ~2000 DOM nodes | 200 DOM nodes | **90% reduction** |
-| **Visual output** | ✅ Syntax highlighted | ✅ Identical | **No difference** |
+| Metric                | Traditional (Shiki)   | Highlight API | Improvement       |
+| --------------------- | --------------------- | ------------- | ----------------- |
+| **7-line code block** | 35 DOM nodes          | 7 DOM nodes   | **80% reduction** |
+| **200-line file**     | ~2000 DOM nodes       | 200 DOM nodes | **90% reduction** |
+| **Visual output**     | ✅ Syntax highlighted | ✅ Identical  | **No difference** |
 
 ## Installation
 
@@ -48,7 +49,7 @@ const code = `function greet(name) {
 
 const result = await codeToHighlightHtml(code, {
   lang: 'javascript',
-  theme: 'dark-plus'
+  theme: 'dark-plus',
 });
 
 // Insert into your page
@@ -74,12 +75,12 @@ The API returns three parts:
 
 ## Browser Support
 
-| Browser | Version | Released |
-|---------|---------|----------|
-| Chrome | 105+ | September 2022 |
-| Safari | 17.2+ | January 2024 |
-| Firefox | 140+ | 2024 |
-| Edge | 105+ | September 2022 |
+| Browser | Version | Released       |
+| ------- | ------- | -------------- |
+| Chrome  | 105+    | September 2022 |
+| Safari  | 17.2+   | January 2024   |
+| Firefox | 140+    | 2024           |
+| Edge    | 105+    | September 2022 |
 
 **Fallback:** Use `codeToHtmlFallback()` for older browsers (generates traditional Shiki output).
 
@@ -105,8 +106,8 @@ export default {
   markdown: {
     remarkPlugins: [remarkHighlightApi],
     syntaxHighlight: false,
-  }
-}
+  },
+};
 ```
 
 ### Manual Integration
@@ -152,7 +153,7 @@ import customGrammar from './my-language.tmLanguage.json';
 
 await loadCustomLanguage({
   ...customGrammar,
-  name: 'my-lang',  // Override grammar name to match usage
+  name: 'my-lang', // Override grammar name to match usage
 });
 
 // Now use it
@@ -166,6 +167,7 @@ const result = await codeToHighlightHtml(code, { lang: 'my-lang' });
 Generate syntax-highlighted HTML using CSS Custom Highlight API.
 
 **Parameters:**
+
 - `code` (string): Source code to highlight
 - `options` (object):
   - `lang` (string, required): Language identifier (e.g., `'javascript'`, `'python'`)
@@ -176,13 +178,13 @@ Generate syntax-highlighted HTML using CSS Custom Highlight API.
 
 ```typescript
 interface HighlightResult {
-  html: string;      // Clean HTML structure
-  css: string;       // ::highlight() styles
-  script: string;    // Client-side registration
+  html: string; // Clean HTML structure
+  css: string; // ::highlight() styles
+  script: string; // Client-side registration
   stats: {
-    tokens: number;        // Total tokens
-    lines: number;         // Total lines (= DOM nodes)
-    uniqueStyles: number;  // Unique colors
+    tokens: number; // Total tokens
+    lines: number; // Total lines (= DOM nodes)
+    uniqueStyles: number; // Unique colors
   };
 }
 ```
@@ -200,6 +202,7 @@ Generate traditional Shiki HTML for unsupported browsers.
 Load a custom TextMate grammar.
 
 **Parameters:**
+
 - `grammar` (object): TextMate grammar JSON with `name` field
 
 **Returns:** Promise<void>
@@ -234,8 +237,12 @@ Load a custom TextMate grammar.
 
 <!-- CSS rules -->
 <style>
-  ::highlight(hl-abc-0) { color: #569cd6; } /* Keywords */
-  ::highlight(hl-abc-1) { color: #dcdcaa; } /* Functions */
+  ::highlight(hl-abc-0) {
+    color: #569cd6;
+  } /* Keywords */
+  ::highlight(hl-abc-1) {
+    color: #dcdcaa;
+  } /* Functions */
 </style>
 
 <!-- JavaScript registration -->
@@ -252,11 +259,11 @@ Load a custom TextMate grammar.
 
 **Tested on:** 28-line C64 BASIC program
 
-| Approach | DOM Nodes | Memory | Parsing Time |
-|----------|-----------|--------|--------------|
-| Traditional | 264 `<span>` elements | ~8KB | Baseline |
-| Highlight API | 28 text nodes | ~1KB | Same |
-| **Difference** | **-90%** | **-87%** | **No penalty** |
+| Approach       | DOM Nodes             | Memory   | Parsing Time   |
+| -------------- | --------------------- | -------- | -------------- |
+| Traditional    | 264 `<span>` elements | ~8KB     | Baseline       |
+| Highlight API  | 28 text nodes         | ~1KB     | Same           |
+| **Difference** | **-90%**              | **-87%** | **No penalty** |
 
 **Tokenization:** Uses Shiki's excellent parser (no change)
 **Visual output:** Pixel-perfect identical
@@ -265,6 +272,7 @@ Load a custom TextMate grammar.
 ## Real-World Impact
 
 **Typical documentation page:**
+
 - 5 code blocks
 - ~50 lines per block
 - 250 lines total
@@ -276,6 +284,7 @@ Load a custom TextMate grammar.
 ## Inspiration
 
 This project was inspired by:
+
 - [Blog post by Pavi Gupta](https://pavi2410.com/blog/high-performance-syntax-highlighting-with-css-highlights-api/)
 - Real-world performance issues on [Code Like It's 198x](https://code198x.stevehill.xyz)
 
