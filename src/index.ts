@@ -180,13 +180,25 @@ function generateHtml(code: string, blockId: string, metadata?: Metadata): strin
       const lineNum = i + 1;
       const lineId = `${blockId}-L${i}`;
 
-      // Build classes
-      const classes = ['line'];
-      if (metadata) {
-        if (metadata.highlightedLines.has(lineNum)) classes.push('highlighted');
-        if (metadata.diffLines.added.has(lineNum)) classes.push('diff', 'add');
-        if (metadata.diffLines.removed.has(lineNum)) classes.push('diff', 'remove');
-        if (metadata.focusLines.size > 0 && !metadata.focusLines.has(lineNum)) {
+      // Build classes - use metadata.lineClasses if available (includes custom transformer classes)
+      const classes: string[] = [];
+
+      if (metadata && metadata.lineClasses.has(lineNum)) {
+        // Use all classes from metadata (includes custom transformer classes)
+        classes.push(...metadata.lineClasses.get(lineNum)!);
+      } else {
+        // Fallback to basic 'line' class
+        classes.push('line');
+      }
+
+      // Ensure 'line' class is always present
+      if (!classes.includes('line')) {
+        classes.unshift('line');
+      }
+
+      // Add blur effect for non-focused lines (not captured in HAST)
+      if (metadata && metadata.focusLines.size > 0 && !metadata.focusLines.has(lineNum)) {
+        if (!classes.includes('blurred')) {
           classes.push('blurred');
         }
       }
