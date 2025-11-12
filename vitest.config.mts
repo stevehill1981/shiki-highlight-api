@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    exclude: ['test/browser/**', '**/node_modules/**'], // Exclude Playwright tests and node_modules
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

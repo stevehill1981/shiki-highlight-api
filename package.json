@@ -42,10 +42,14 @@
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
-    "test": "vitest run",
+    "test": "npm run test:unit && npm run test:browser",
+    "test:unit": "vitest run",
+    "test:browser": "playwright test",
+    "test:browser:headed": "playwright test --headed",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "playwright:install": "playwright install chromium",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -53,23 +57,25 @@
     "prepublishOnly": "npm run build && npm test"
   },
   "dependencies": {
-    "unist-util-visit": "^5.0.0",
-    "hast-util-to-string": "^3.0.0"
+    "hast-util-to-string": "^3.0.0",
+    "unist-util-visit": "^5.0.0"
   },
   "peerDependencies": {
     "shiki": ">=1.0.0"
   },
   "devDependencies": {
-    "@types/hast": "^3.0.4",
-    "@types/unist": "^3.0.3",
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.56.1",
+    "@types/hast": "^3.0.4",
     "@types/node": "^24.10.0",
+    "@types/unist": "^3.0.3",
     "@vitest/coverage-v8": "^4.0.8",
     "@vitest/ui": "^4.0.7",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^20.0.10",
     "jsdom": "^27.1.0",
+    "playwright": "^1.56.1",
     "prettier": "^3.6.2",
     "shiki": "^3.14.0",
     "tsup": "^8.0.0",
