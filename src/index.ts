@@ -409,11 +409,24 @@ function generateScript(tokens: ThemedToken[][], blockId: string): string {
       const range = new Range();
       try {
         const textNode = lineContentElement.firstChild;
+
+        // Additional safety check
+        if (!textNode || textNode.nodeType !== 3) {
+          console.warn(\`Line \${r.line}: No text node found\`);
+          return null;
+        }
+
+        const textLength = textNode.nodeValue ? textNode.nodeValue.length : 0;
+        if (r.start > textLength || r.end > textLength) {
+          console.error(\`Line \${r.line}: Range overflow - text length: \${textLength}, range: \${r.start}-\${r.end}\`);
+          return null;
+        }
+
         range.setStart(textNode, r.start);
         range.setEnd(textNode, r.end);
         return range;
       } catch (e) {
-        console.error('Range creation failed:', e);
+        console.error(\`Range creation failed for line \${r.line}, range \${r.start}-\${r.end}:\`, e);
         return null;
       }
     }).filter(r => r !== null);
