@@ -143,6 +143,115 @@ export async function CodeBlock({ code, lang }: { code: string; lang: string }) 
 }
 ```
 
+## Transformer Features
+
+shiki-highlight-api supports Shiki v3 transformers, enabling powerful code block enhancements:
+
+### Line Numbers
+
+```typescript
+const result = await codeToHighlightHtml(code, {
+  lang: 'javascript',
+  lineNumbers: true, // Start at line 1
+});
+
+// Or start at a custom line number
+const result = await codeToHighlightHtml(code, {
+  lang: 'javascript',
+  lineNumbers: { start: 10 }, // Start at line 10
+});
+```
+
+### Line Highlighting
+
+```typescript
+// Array syntax
+const result = await codeToHighlightHtml(code, {
+  lang: 'javascript',
+  highlightLines: [1, 3, 5], // Highlight lines 1, 3, and 5
+});
+
+// String syntax (supports ranges)
+const result = await codeToHighlightHtml(code, {
+  lang: 'javascript',
+  highlightLines: '1,3,5-7', // Lines 1, 3, 5, 6, 7
+});
+```
+
+### Diff Lines
+
+```typescript
+const result = await codeToHighlightHtml(code, {
+  lang: 'javascript',
+  diffLines: {
+    added: [2, 3], // Lines added (green background)
+    removed: [5], // Lines removed (red background, strikethrough)
+  },
+});
+```
+
+### Focus Lines
+
+```typescript
+const result = await codeToHighlightHtml(code, {
+  lang: 'javascript',
+  focusLines: [2, 3], // Focus lines 2-3, blur others
+});
+```
+
+### Combined Features
+
+All transformer features can be combined:
+
+```typescript
+const result = await codeToHighlightHtml(code, {
+  lang: 'javascript',
+  lineNumbers: { start: 5 },
+  highlightLines: [1],
+  diffLines: {
+    added: [2],
+    removed: [3],
+  },
+  focusLines: [1, 2],
+});
+```
+
+### Custom Transformers
+
+Advanced users can provide custom Shiki transformers:
+
+```typescript
+import type { ShikiTransformer } from 'shiki-highlight-api';
+
+const customTransformer: ShikiTransformer = {
+  name: 'my-transformer',
+  line(node, line) {
+    // Add custom classes or attributes
+    node.properties = node.properties || {};
+    node.properties['data-line'] = line;
+    const classes = Array.isArray(node.properties.class) ? node.properties.class : [];
+
+    // Ensure 'line' class is present
+    if (!classes.includes('line')) {
+      classes.push('line');
+    }
+
+    // Add custom class for line 5
+    if (line === 5) {
+      classes.push('special');
+    }
+
+    node.properties.class = classes;
+  },
+};
+
+const result = await codeToHighlightHtml(code, {
+  lang: 'javascript',
+  transformers: [customTransformer],
+  lineNumbers: true, // Can combine with convenience options
+});
+```
+
 ## Custom Languages
 
 Load custom TextMate grammars:
@@ -173,6 +282,11 @@ Generate syntax-highlighted HTML using CSS Custom Highlight API.
   - `lang` (string, required): Language identifier (e.g., `'javascript'`, `'python'`)
   - `theme` (string, optional): Shiki theme name (default: `'dark-plus'`)
   - `blockId` (string, optional): Unique block identifier (auto-generated if omitted)
+  - `transformers` (ShikiTransformer[], optional): Custom Shiki transformers
+  - `lineNumbers` (boolean | { start?: number }, optional): Enable line numbers
+  - `highlightLines` (number[] | string, optional): Lines to highlight (e.g., `[1,3,5]` or `'1,3,5-7'`)
+  - `diffLines` ({ added?: number[], removed?: number[] }, optional): Diff line markers
+  - `focusLines` (number[], optional): Lines to focus (blurs others)
 
 **Returns:** Promise<HighlightResult>
 
@@ -227,15 +341,33 @@ Load a custom TextMate grammar.
 ### Highlight API Approach
 
 ```html
-<!-- Clean HTML -->
+<!-- Clean HTML (without transformers) -->
 <pre class="shiki" data-highlight-block="hl-abc">
   <code>
-    <span id="hl-abc-L0" class="line">function greet(name) {</span>
-    <span id="hl-abc-L1" class="line">  console.log('Hello, ' + name);</span>
+    <span id="hl-abc-L0" class="line">
+      <span class="line-content">function greet(name) {</span>
+    </span>
+    <span id="hl-abc-L1" class="line">
+      <span class="line-content">  console.log('Hello, ' + name);</span>
+    </span>
   </code>
 </pre>
 
-<!-- CSS rules -->
+<!-- With transformers (line numbers + highlighting) -->
+<pre class="shiki" data-highlight-block="hl-abc">
+  <code>
+    <span id="hl-abc-L0" class="line highlighted">
+      <span class="line-number">1</span>
+      <span class="line-content">function greet(name) {</span>
+    </span>
+    <span id="hl-abc-L1" class="line">
+      <span class="line-number">2</span>
+      <span class="line-content">  console.log('Hello, ' + name);</span>
+    </span>
+  </code>
+</pre>
+
+<!-- CSS rules (syntax highlighting) -->
 <style>
   ::highlight(hl-abc-0) {
     color: #569cd6;
@@ -243,6 +375,19 @@ Load a custom TextMate grammar.
   ::highlight(hl-abc-1) {
     color: #dcdcaa;
   } /* Functions */
+
+  /* Line-level styles (from transformers) */
+  [data-highlight-block='hl-abc'] .line.highlighted {
+    background-color: rgba(255, 255, 0, 0.1);
+    border-left: 3px solid rgba(255, 255, 0, 0.5);
+  }
+  [data-highlight-block='hl-abc'] .line-number {
+    display: inline-block;
+    width: 3ch;
+    margin-right: 1em;
+    color: #6e7681;
+    user-select: none;
+  }
 </style>
 
 <!-- JavaScript registration -->
