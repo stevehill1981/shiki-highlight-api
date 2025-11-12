@@ -12,8 +12,12 @@ import {
   type BundledLanguage,
   type Highlighter,
   type LanguageRegistration,
+  type ShikiTransformer,
 } from 'shiki';
 import type { ThemedToken } from 'shiki';
+import { buildTransformers } from './transformer-builder';
+import { extractMetadata } from './metadata-extraction';
+import type { Metadata } from './metadata';
 
 // Singleton highlighter instance
 let highlighterInstance: Highlighter | null = null;
@@ -64,6 +68,20 @@ export interface HighlightOptions {
   theme?: string;
   /** Optional unique block ID (auto-generated if omitted) */
   blockId?: string;
+
+  // Transformer support
+  /** Shiki transformers for custom code processing */
+  transformers?: ShikiTransformer[];
+
+  // Convenience options (converted to transformers internally)
+  /** Enable line numbers. Pass true for default (starting at 1), or { start: number } to customize */
+  lineNumbers?: boolean | { start?: number };
+  /** Lines to highlight. Can be array [1,3,5] or string "1,3,5-7" */
+  highlightLines?: number[] | string;
+  /** Lines showing diff additions/removals */
+  diffLines?: { added?: number[]; removed?: number[] };
+  /** Lines to focus (blurs other lines) */
+  focusLines?: number[];
 }
 
 /**
@@ -89,17 +107,36 @@ export async function codeToHighlightHtml(
   // Get highlighter instance
   const highlighter = await getHighlighter();
 
-  // Tokenize code using Shiki
+  // Build transformers from options
+  const transformers = buildTransformers(options);
+
+  // Extract metadata if transformers are present
+  let metadata: Metadata | undefined;
+  if (transformers.length > 0) {
+    try {
+      const hast = highlighter.codeToHast(code, {
+        lang: lang as BundledLanguage,
+        theme,
+        transformers,
+      });
+      metadata = extractMetadata(hast);
+    } catch (error) {
+      console.warn('Transformer processing failed, falling back to basic highlighting:', error);
+      // Fall through to fast path
+    }
+  }
+
+  // Tokenize code using Shiki (always needed for syntax colors)
   const tokens = highlighter.codeToTokens(code, {
     lang: lang as BundledLanguage,
     theme,
   });
 
-  // Generate HTML (single text node per line)
-  const html = generateHtml(code, blockId);
+  // Generate HTML with optional metadata
+  const html = generateHtml(code, blockId, metadata);
 
-  // Generate CSS (::highlight() styles)
-  const css = generateCss(tokens.tokens, theme, blockId);
+  // Generate CSS with optional metadata
+  const css = generateCss(tokens.tokens, theme, blockId, metadata);
 
   // Generate client-side script to register highlights
   const script = generateScript(tokens.tokens, blockId);
@@ -135,12 +172,37 @@ export async function loadCustomLanguage(grammar: LanguageRegistration): Promise
 /**
  * Generate clean HTML with single text node per line
  */
-function generateHtml(code: string, blockId: string): string {
+function generateHtml(code: string, blockId: string, metadata?: Metadata): string {
   const lines = code.split('\n');
 
   const linesHtml = lines
     .map((line, i) => {
+      const lineNum = i + 1;
       const lineId = `${blockId}-L${i}`;
+
+      // Build classes - use metadata.lineClasses if available (includes custom transformer classes)
+      const classes: string[] = [];
+
+      if (metadata && metadata.lineClasses.has(lineNum)) {
+        // Use all classes from metadata (includes custom transformer classes)
+        classes.push(...metadata.lineClasses.get(lineNum)!);
+      } else {
+        // Fallback to basic 'line' class
+        classes.push('line');
+      }
+
+      // Ensure 'line' class is always present
+      if (!classes.includes('line')) {
+        classes.unshift('line');
+      }
+
+      // Add blur effect for non-focused lines (not captured in HAST)
+      if (metadata && metadata.focusLines.size > 0 && !metadata.focusLines.has(lineNum)) {
+        if (!classes.includes('blurred')) {
+          classes.push('blurred');
+        }
+      }
+
       // Escape HTML entities
       const escaped = line
         .replace(/&/g, '&amp;')
@@ -148,7 +210,29 @@ function generateHtml(code: string, blockId: string): string {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
-      return `<span id="${lineId}" class="line">${escaped}</span>`;
+
+      let lineContent = '';
+
+      // Add diff marker
+      if (metadata) {
+        if (metadata.diffLines.added.has(lineNum)) {
+          lineContent += '<span class="diff-marker">+</span>';
+        } else if (metadata.diffLines.removed.has(lineNum)) {
+          lineContent += '<span class="diff-marker">-</span>';
+        }
+      }
+
+      // Add line number
+      if (metadata && metadata.lineNumbers) {
+        const start =
+          typeof metadata.lineNumbers === 'object' ? metadata.lineNumbers.start || 1 : 1;
+        lineContent += `<span class="line-number">${start + i}</span>`;
+      }
+
+      // Add code
+      lineContent += `<span class="line-content">${escaped}</span>`;
+
+      return `<span id="${lineId}" class="${classes.join(' ')}">${lineContent}</span>`;
     })
     .join('\n');
 
@@ -158,7 +242,12 @@ function generateHtml(code: string, blockId: string): string {
 /**
  * Generate CSS with ::highlight() pseudo-elements
  */
-function generateCss(tokens: ThemedToken[][], theme: string, blockId: string): string {
+function generateCss(
+  tokens: ThemedToken[][],
+  theme: string,
+  blockId: string,
+  metadata?: Metadata
+): string {
   // Collect unique colors
   const colorMap = new Map<string, string>();
   let colorIndex = 0;
@@ -170,14 +259,78 @@ function generateCss(tokens: ThemedToken[][], theme: string, blockId: string): s
     }
   });
 
-  // Generate ::highlight() rules
-  const rules = Array.from(colorMap.entries())
+  // Generate ::highlight() rules for token colors
+  const tokenRules = Array.from(colorMap.entries())
     .map(([color, name]) => {
       return `::highlight(${name}) { color: ${color}; }`;
     })
     .join('\n');
 
-  return `<style data-highlight-styles="${blockId}">\n${rules}\n</style>`;
+  // Generate line-level styles if metadata present
+  const lineStyles: string[] = [];
+
+  if (metadata) {
+    if (metadata.highlightedLines.size > 0) {
+      lineStyles.push(
+        `
+[data-highlight-block="${blockId}"] .line.highlighted {
+  background-color: rgba(255, 255, 0, 0.1);
+  border-left: 3px solid rgba(255, 255, 0, 0.5);
+  padding-left: 0.5em;
+}
+      `.trim()
+      );
+    }
+
+    if (metadata.diffLines.added.size > 0 || metadata.diffLines.removed.size > 0) {
+      lineStyles.push(
+        `
+[data-highlight-block="${blockId}"] .line.diff.add {
+  background-color: rgba(0, 255, 0, 0.1);
+}
+[data-highlight-block="${blockId}"] .line.diff.remove {
+  background-color: rgba(255, 0, 0, 0.1);
+  text-decoration: line-through;
+}
+[data-highlight-block="${blockId}"] .diff-marker {
+  display: inline-block;
+  width: 1ch;
+  user-select: none;
+}
+      `.trim()
+      );
+    }
+
+    if (metadata.focusLines.size > 0) {
+      lineStyles.push(
+        `
+[data-highlight-block="${blockId}"] .line.blurred {
+  opacity: 0.3;
+  filter: blur(0.5px);
+}
+      `.trim()
+      );
+    }
+
+    if (metadata.lineNumbers) {
+      lineStyles.push(
+        `
+[data-highlight-block="${blockId}"] .line-number {
+  display: inline-block;
+  width: 3ch;
+  text-align: right;
+  margin-right: 1em;
+  color: #6e7681;
+  user-select: none;
+}
+      `.trim()
+      );
+    }
+  }
+
+  const allRules = [tokenRules, ...lineStyles].filter(Boolean).join('\n\n');
+
+  return `<style data-highlight-styles="${blockId}">\n${allRules}\n</style>`;
 }
 
 /**
@@ -320,4 +473,4 @@ export async function createCustomHighlighter(options: {
 }
 
 // Re-export types from Shiki for convenience
-export type { Highlighter, BundledLanguage, ThemedToken };
+export type { Highlighter, BundledLanguage, ThemedToken, ShikiTransformer };

@@ -84,7 +84,9 @@ describe('Edge Cases', () => {
       });
 
       expect(result.stats.lines).toBe(3);
-      expect(result.html).toContain('<span id="test-empty-lines-L1" class="line"></span>');
+      expect(result.html).toContain(
+        '<span id="test-empty-lines-L1" class="line"><span class="line-content"></span></span>'
+      );
     });
 
     it('handles only whitespace', async () => {

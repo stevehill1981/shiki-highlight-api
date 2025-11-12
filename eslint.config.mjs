@@ -19,6 +19,6 @@ export default tseslint.config(
     ...tseslint.configs.disableTypeChecked,
   },
   {
-    ignores: ['dist/', 'node_modules/', '*.config.*'],
+    ignores: ['dist/', 'node_modules/', 'coverage/', '*.config.*'],
   }
 );
