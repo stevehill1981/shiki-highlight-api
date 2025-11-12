@@ -52,10 +52,16 @@
     "format:check": "prettier --check .",
     "prepublishOnly": "npm run build && npm test"
   },
+  "dependencies": {
+    "unist-util-visit": "^5.0.0",
+    "hast-util-to-string": "^3.0.0"
+  },
   "peerDependencies": {
     "shiki": ">=1.0.0"
   },
   "devDependencies": {
+    "@types/hast": "^3.0.4",
+    "@types/unist": "^3.0.3",
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.0",
     "@vitest/coverage-v8": "^4.0.8",
