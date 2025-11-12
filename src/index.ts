@@ -400,11 +400,15 @@ function generateScript(tokens: ThemedToken[][], blockId: string): string {
   rangesByColor.forEach((rangeList, color) => {
     const domRanges = rangeList.map(r => {
       const lineElement = document.getElementById(\`\${blockId}-L\${r.line}\`);
-      if (!lineElement || !lineElement.firstChild) return null;
+      if (!lineElement) return null;
+
+      // Find the .line-content element which contains the actual code text
+      const lineContentElement = lineElement.querySelector('.line-content');
+      if (!lineContentElement || !lineContentElement.firstChild) return null;
 
       const range = new Range();
       try {
-        const textNode = lineElement.firstChild;
+        const textNode = lineContentElement.firstChild;
         range.setStart(textNode, r.start);
         range.setEnd(textNode, r.end);
         return range;
