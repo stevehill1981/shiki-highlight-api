@@ -21,26 +21,39 @@ import type { Metadata } from './metadata';
 
 // Singleton highlighter instance
 let highlighterInstance: Highlighter | null = null;
+let highlighterPromise: Promise<Highlighter> | null = null;
 
 /**
  * Get or create the shared highlighter instance
+ * Thread-safe: prevents race conditions during parallel builds
  */
 async function getHighlighter(): Promise<Highlighter> {
+  // If we're already creating one, wait for that promise
+  if (highlighterPromise) {
+    return highlighterPromise;
+  }
+
+  // If we already have one, return it immediately
   if (highlighterInstance) {
     return highlighterInstance;
   }
 
-  // Create highlighter with bundled languages
-  highlighterInstance = await createHighlighter({
+  // Create new highlighter and cache the promise immediately
+  // This prevents multiple simultaneous calls from creating duplicate instances
+  highlighterPromise = createHighlighter({
     themes: ['dark-plus'],
     langs: [],
+  }).then(async (hl) => {
+    // Load common languages by default
+    await hl.loadLanguage(bundledLanguages.javascript);
+    await hl.loadLanguage(bundledLanguages.typescript);
+
+    // Store the instance for future calls
+    highlighterInstance = hl;
+    return hl;
   });
 
-  // Load common languages by default
-  await highlighterInstance.loadLanguage(bundledLanguages.javascript);
-  await highlighterInstance.loadLanguage(bundledLanguages.typescript);
-
-  return highlighterInstance;
+  return highlighterPromise;
 }
 
 export interface HighlightResult {

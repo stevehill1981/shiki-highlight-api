@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2025-11-13
+
+### Fixed
+
+- **Critical**: Fixed race condition causing duplicate highlighter instances during parallel builds
+  - Singleton pattern now uses promise caching to prevent concurrent instance creation
+  - Resolves Shiki warnings "N instances have been created" during parallel builds
+  - Particularly important for documentation sites with 100+ pages built in parallel
+  - Issue: shiki-highlights/remark-shiki-highlight-api#23
+
+### Added
+
+- **Concurrency Tests**: Added comprehensive test suite for singleton behavior
+  - Tests verify single instance creation with 50-100 concurrent calls
+  - Prevents future regression of singleton pattern
+
+### Technical Details
+
+- Added `highlighterPromise` cache alongside `highlighterInstance`
+- Multiple simultaneous calls now wait for the same promise instead of creating duplicates
+- Zero breaking changes - purely internal implementation fix
+
 ## [1.0.3] - 2025-01-12
 
 ### Fixed
